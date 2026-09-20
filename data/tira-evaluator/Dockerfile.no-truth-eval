@@ -1,4 +1,4 @@
-# docker build -t ghcr.io/trec-auto-judge/auto-judge-code/cli:0.0.3-no-truth-evaluator -f Dockerfile.no-truth-eval .
+# docker build -t ghcr.io/trec-auto-judge/auto-judge-code/cli:0.0.4-no-truth-evaluator -f Dockerfile.no-truth-eval .
 
 FROM ghcr.io/trec-auto-judge/auto-judge-code/cli:0.0.3
 

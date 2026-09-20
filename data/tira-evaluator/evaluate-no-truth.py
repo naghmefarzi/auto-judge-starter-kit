@@ -36,6 +36,11 @@ def main(input_directory, output_directory):
     leaderboard_to_eval = find_leaderboard(input_directory)
     if leaderboard_to_eval is None:
         print(f"No leaderboard found in {input_directory}")
+
+        if extract_llm(input_directory):
+            with open(f"{output_directory}/evaluation.prototext", "w") as f:
+                f.write(to_prototext([{"Model": extract_llm(input_directory)}]))
+
         return
 
     output_prototext = f"{output_directory}/evaluation.prototext"
