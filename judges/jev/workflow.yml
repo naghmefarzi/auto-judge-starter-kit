@@ -1,0 +1,93 @@
+# JevJudge -- AutoJudge built on Jev (TypeSafe AI's "System One" typed-decision
+# model), called directly through the official typesafe_sdk (no LangChain --
+# see judges/jev_langchain/workflow.yml for that variant).
+#
+# Requires TYPESAFE_API_KEY in the environment (TYPESAFE_BASE_URL /
+# TYPESAFE_DEFAULT_MODEL optional). See judges/jev/README.md.
+#
+#   export TYPESAFE_API_KEY=...
+#   auto-judge run --workflow judges/jev/workflow.yml \
+#       --rag-responses data/kiddie/runs/repgen/ \
+#       --rag-topics data/kiddie/topics/kiddie-topics.jsonl \
+#       --out-dir ./output-jev/
+
+qrels_class: "judges.jev.jev_judge:JevQrelsCreator"
+judge_class: "judges.jev.jev_judge:JevLeaderboardJudge"
+
+# Lifecycle
+create_nuggets: false
+create_qrels: true
+judge: true
+
+# Jev computes its own scores; it does not consume the qrels. Both phases ask
+# the same questions, but Jev has no prompt cache of its own -- each phase
+# re-issues real requests (unlike judges/verifier under CACHE_DIR).
+judge_uses_qrels: false
+judge_uses_nuggets: false
+qrels_uses_nuggets: false
+
+augment_report: false
+uses_llm: false   # Jev is not called through the OPENAI_*-style LLM config
+
+settings:
+  filebase: "{_name}"
+  max_grade: 3                       # grade scale 0..3; score_levels must have max_grade+1 entries
+  criteria: ["overall relevance"]    # one Score question per criterion, all sent in ONE request
+  score_levels:
+    - "fails the criterion entirely / off-topic / empty"
+    - "marginal: touches the criterion but mostly inadequate"
+    - "good: largely satisfies the criterion with minor gaps"
+    - "excellent: fully satisfies the criterion"
+  max_response_chars: 12000
+  max_problem_chars: 1500
+  include_problem_statement: true
+  include_citations: false           # true: state carries response_sentences + cited_documents
+  max_citation_chars: 4000
+  qrels_doc_id: "report_hash"        # "report_hash" | "run_id"
+  on_missing: "fix_aggregate"
+  concurrency: 32                    # max in-flight Jev requests
+  model: ""                          # "" => TypeSafe SDK/env default (TYPESAFE_DEFAULT_MODEL)
+  debug: false                       # true: dump per-call state/scores/probabilities. RESTRICTED data.
+  questions: {}                      # optional: {id: {type, instructions, criteria}} -- overrides
+                                      # criteria/score_levels entirely when non-empty. See the
+                                      # rag26/ragtime26 variants below and judges/jev/README.md.
+  checkeval_file: ""                 # optional: path to a CheckEval seed-question JSON (see
+                                      # judges/_checkeval.py); takes priority over `questions`.
+  qrels_dir: ""                      # optional: directory of TREC-format qrels pool files (see
+                                      # judges/_ground_truth.py). When set (and debug: true),
+                                      # debug records get objective ground_truth_citation_
+                                      # precision/recall -- e.g. for rag25:
+                                      # local-data/rag25/runs/qrels. Empty/absent when unset or
+                                      # a topic has no qrels coverage (e.g. rag26, which has none).
+
+# auto-judge run --workflow ... --variant <name>
+variants:
+  # Axis: criteria decomposition, with grounding-aware state (per-sentence citations)
+  decompose:
+    criteria: ["topical relevance", "answer completeness", "factual grounding in the cited sources"]
+    include_citations: true
+
+  # Dump per-call state/scores/probabilities to a .jev-debug.jsonl next to the
+  # normal output.
+  debug:
+    debug: true
+
+  # Per-dataset CheckEval question sets (see judges/_checkeval.py and
+  # judges/jev/README.md#per-dataset-question-sets). Each file decomposes the
+  # host track's own official evaluation into ~25 fine-grained noul checks
+  # across ~6-8 dimensions, plus collapsed coherence/fluency scores and a
+  # holistic overall_quality score + outcome choice.
+  rag26:
+    include_citations: true
+    checkeval_file: "jev style/checkeval_trec_rag_2026.json"
+
+  ragtime26:
+    include_citations: true
+    checkeval_file: "jev style/checkeval_trec_ragtime_2026.json"
+
+  # Same debug dump, plus objective ground_truth_citation_precision/recall from
+  # rag25's real qrels (rag25 is pilot/training data with genuine assessed
+  # relevance judgments, unlike rag26/ragtime26's placeholder-only eval data).
+  rag25-truth:
+    debug: true
+    qrels_dir: "local-data/rag25/runs/qrels"

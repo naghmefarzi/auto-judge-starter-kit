@@ -1,0 +1,81 @@
+# LayaJudge -- AutoJudge built on Laya (convaiinnovations/laya), a small,
+# local, open-weight "System 1" typed-decision model in the same family as
+# Jev, but self-hosted -- no API key, runs on your own CPU/GPU.
+#
+# Requires the `laya` package (pip install laya); weights download from
+# Hugging Face on first use. See judges/laya/README.md.
+#
+#   auto-judge run --workflow judges/laya/workflow.yml \
+#       --rag-responses data/kiddie/runs/repgen/ \
+#       --rag-topics data/kiddie/topics/kiddie-topics.jsonl \
+#       --out-dir ./output-laya/
+
+qrels_class: "judges.laya.laya_judge:LayaQrelsCreator"
+judge_class: "judges.laya.laya_judge:LayaLeaderboardJudge"
+
+create_nuggets: false
+create_qrels: true
+judge: true
+
+judge_uses_qrels: false
+judge_uses_nuggets: false
+qrels_uses_nuggets: false
+
+augment_report: false
+uses_llm: false   # local model, not called through the OPENAI_*-style LLM config
+
+settings:
+  filebase: "{_name}"
+  max_grade: 3
+  criteria: ["overall relevance"]
+  score_levels:
+    - "fails the criterion entirely / off-topic / empty"
+    - "marginal: touches the criterion but mostly inadequate"
+    - "good: largely satisfies the criterion with minor gaps"
+    - "excellent: fully satisfies the criterion"
+  max_response_chars: 12000
+  max_problem_chars: 1500
+  include_problem_statement: true
+  include_citations: false           # true: state carries response_sentences + cited_documents
+  max_citation_chars: 4000
+  qrels_doc_id: "report_hash"
+  on_missing: "fix_aggregate"
+  checkpoint: ""     # "" (English default) | "multilingual" | "typed-decisions"
+  device: ""         # "" (auto) | "cpu" | "cuda"
+  debug: false
+  questions: {}      # optional: {id: {type, instructions, criteria}} -- overrides
+                     # criteria/score_levels entirely when non-empty. See the
+                     # rag26/ragtime26 variants below and judges/jev/README.md.
+  checkeval_file: "" # optional: path to a CheckEval seed-question JSON; takes priority
+                     # over `questions`.
+  qrels_dir: ""      # optional: directory of TREC-format qrels pool files (see
+                     # judges/_ground_truth.py). When set (and debug: true), debug records
+                     # get objective ground_truth_citation_precision/recall. Empty/absent
+                     # when unset or a topic has no qrels coverage (e.g. rag26, none).
+
+variants:
+  multilingual:
+    checkpoint: "multilingual"
+
+  decompose:
+    criteria: ["topical relevance", "answer completeness", "factual grounding in the cited sources"]
+    include_citations: true
+
+  debug:
+    debug: true
+
+  # Per-dataset CheckEval question sets (see judges/_checkeval.py and
+  # judges/jev/README.md#per-dataset-question-sets).
+  rag26:
+    include_citations: true
+    checkeval_file: "jev style/checkeval_trec_rag_2026.json"
+
+  ragtime26:
+    include_citations: true
+    checkeval_file: "jev style/checkeval_trec_ragtime_2026.json"
+
+  # Same debug dump, plus objective ground_truth_citation_precision/recall from
+  # rag25's real qrels (see judges/jev/workflow.yml's rag25-truth variant).
+  rag25-truth:
+    debug: true
+    qrels_dir: "local-data/rag25/runs/qrels"

@@ -1,0 +1,192 @@
+{
+  "task": "TREC 2026 RAGTIME",
+  "task_url": "https://trec-ragtime.github.io/",
+  "description": "Multilingual report generation from news. Given a report request and documents in English, Spanish, Chinese, and Russian, generate a multi-faceted English report with citations supporting its claims.",
+  "official_evaluation": [
+    "Citation-based evaluation (supporting evidence for claims)",
+    "Multi-faceted coverage (beyond factoid QA)",
+    "Auto-nuggetization / request decomposition as supporting subtask",
+    "Multilingual (MLIR) retrieval as supporting subtask"
+  ],
+  "evaluation_caveat": "The detailed RAGTIME rubric lives in the track's Google Doc guidelines, which was not accessible when this checklist was built. Core/extension labels are based on the public homepage; verify against the guidelines before finalizing weights.",
+  "checkeval_style": {
+    "question_format": "boolean",
+    "answer_alignment": "A 'yes' response always indicates higher quality.",
+    "dimension_score": "proportion of 'yes' responses among the dimension's questions",
+    "note": "These are SEED questions intended as input to the CheckEval augmentation (diversification + elaboration) and filtering stages."
+  },
+  "grounding_legend": {
+    "core": "Directly grounded in the track's stated evaluation.",
+    "extension": "Reasonable sub-dimension in the spirit of the task, not explicitly named in the guidelines; keep under human review."
+  },
+  "dimensions": [
+    {
+      "dimension": "Topic / Nugget Coverage (multi-faceted)",
+      "grounding": "core",
+      "grounding_note": "Auto-nuggetization; multi-faceted reports",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Facet breadth",
+          "questions": [
+            { "id": "rt-cov-facet-1", "text": "Does the report cover the full set of facets implied by the report request, not just one angle?" },
+            { "id": "rt-cov-facet-2", "text": "Are the key sub-questions a reader would expect from this request each answered?" }
+          ]
+        },
+        {
+          "sub_dimension": "Vital nuggets",
+          "questions": [
+            { "id": "rt-cov-vital-1", "text": "Does the report include the essential facts needed to satisfy the information need?" },
+            { "id": "rt-cov-vital-2", "text": "Are important points given proportional space rather than buried?" }
+          ]
+        },
+        {
+          "sub_dimension": "Balance",
+          "questions": [
+            { "id": "rt-cov-balance-1", "text": "Does the report avoid over-weighting one facet at the expense of others the request calls for?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Citation Support / Groundedness",
+      "grounding": "core",
+      "grounding_note": "Citation-based evaluation",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Claim attribution",
+          "questions": [
+            { "id": "rt-cite-attr-1", "text": "Is each substantive claim in the report backed by a citation to a supporting document?" },
+            { "id": "rt-cite-attr-2", "text": "Do the cited documents actually contain the claim they are attached to?" }
+          ]
+        },
+        {
+          "sub_dimension": "Support strength",
+          "questions": [
+            { "id": "rt-cite-supp-1", "text": "Do the cited passages fully support their claims rather than only partially?" },
+            { "id": "rt-cite-supp-2", "text": "Is the report free of claims that exceed what the cited evidence states?" }
+          ]
+        },
+        {
+          "sub_dimension": "Completeness",
+          "questions": [
+            { "id": "rt-cite-comp-1", "text": "Are there no unsupported factual claims left uncited?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Cross-lingual Fidelity",
+      "grounding": "core",
+      "grounding_note": "Multilingual sources (EN/ES/ZH/RU) to English report",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Translation accuracy",
+          "questions": [
+            { "id": "rt-xling-trans-1", "text": "Is information drawn from Spanish, Chinese, or Russian sources rendered accurately in English?" },
+            { "id": "rt-xling-trans-2", "text": "Does the English report preserve the meaning of non-English source claims without distortion?" }
+          ]
+        },
+        {
+          "sub_dimension": "Entity & number fidelity",
+          "questions": [
+            { "id": "rt-xling-entity-1", "text": "Are names of people, places, and organizations from non-English sources rendered correctly and consistently?" },
+            { "id": "rt-xling-entity-2", "text": "Are numbers, dates, and quantities carried over from foreign-language sources accurately?" }
+          ]
+        },
+        {
+          "sub_dimension": "Source-language breadth",
+          "questions": [
+            { "id": "rt-xling-breadth-1", "text": "Does the report draw on evidence from non-English sources where relevant, rather than only English documents?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Faithfulness",
+      "grounding": "core",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Factual consistency & no fabrication",
+          "questions": [
+            { "id": "rt-faith-1", "text": "Is every claim consistent with the underlying source documents?" },
+            { "id": "rt-faith-2", "text": "Does the report avoid inventing facts not present in any source?" },
+            { "id": "rt-faith-3", "text": "Does the report avoid mixing up which source said what?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Temporal Accuracy",
+      "grounding": "extension",
+      "grounding_note": "News / time-sensitive nature of the collection",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Date correctness",
+          "questions": [
+            { "id": "rt-temp-date-1", "text": "Are dates and time references in the report accurate to the sources?" }
+          ]
+        },
+        {
+          "sub_dimension": "Event sequencing",
+          "questions": [
+            { "id": "rt-temp-seq-1", "text": "Are events presented in the correct chronological order?" }
+          ]
+        },
+        {
+          "sub_dimension": "Currency",
+          "questions": [
+            { "id": "rt-temp-curr-1", "text": "Does the report reflect the most recent state of the story rather than superseded information?" },
+            { "id": "rt-temp-curr-2", "text": "Where sources conflict over time, does the report favor the later, updated account?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Relevance to Report Request",
+      "grounding": "core",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Relevance & scope",
+          "questions": [
+            { "id": "rt-rel-1", "text": "Does all content in the report serve the stated information need?" },
+            { "id": "rt-rel-2", "text": "Is the report free of off-topic passages?" },
+            { "id": "rt-rel-3", "text": "Is the level of detail appropriate to the request?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Report Structure & Coherence",
+      "grounding": "extension",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Organization",
+          "questions": [
+            { "id": "rt-struct-org-1", "text": "Is the report organized so related information is grouped logically?" },
+            { "id": "rt-struct-org-2", "text": "Does it read as a coherent report rather than a list of disconnected facts?" }
+          ]
+        },
+        {
+          "sub_dimension": "Non-redundancy",
+          "questions": [
+            { "id": "rt-struct-redun-1", "text": "Does the report avoid repeating the same information in multiple places?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Fluency of the English Report",
+      "grounding": "extension",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Grammar, terminology & readability",
+          "questions": [
+            { "id": "rt-flu-1", "text": "Is the report free of major grammatical errors?" },
+            { "id": "rt-flu-2", "text": "Is terminology used consistently throughout?" },
+            { "id": "rt-flu-3", "text": "Is the report easy to read for a fluent English speaker?" }
+          ]
+        }
+      ]
+    }
+  ]
+}

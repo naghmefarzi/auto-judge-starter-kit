@@ -1,0 +1,82 @@
+# JevLangchainJudge -- the same Jev model as judges/jev, called through the
+# langchain-typesafe integration (TypeSafeClassifier, a LangChain Runnable)
+# instead of the raw SDK, plus a companion Noul "does_pass" question in the
+# same request and optional LangSmith tracing.
+#
+# Requires TYPESAFE_API_KEY in the environment (TYPESAFE_BASE_URL /
+# TYPESAFE_DEFAULT_MODEL optional). See judges/jev_langchain/README.md.
+#
+#   export TYPESAFE_API_KEY=...
+#   auto-judge run --workflow judges/jev_langchain/workflow.yml \
+#       --rag-responses data/kiddie/runs/repgen/ \
+#       --rag-topics data/kiddie/topics/kiddie-topics.jsonl \
+#       --out-dir ./output-jev-langchain/
+
+qrels_class: "judges.jev_langchain.jev_langchain_judge:JevLangchainQrelsCreator"
+judge_class: "judges.jev_langchain.jev_langchain_judge:JevLangchainLeaderboardJudge"
+
+create_nuggets: false
+create_qrels: true
+judge: true
+
+judge_uses_qrels: false
+judge_uses_nuggets: false
+qrels_uses_nuggets: false
+
+augment_report: false
+uses_llm: false
+
+settings:
+  filebase: "{_name}"
+  max_grade: 3
+  criteria: ["overall relevance"]
+  score_levels:
+    - "fails the criterion entirely / off-topic / empty"
+    - "marginal: touches the criterion but mostly inadequate"
+    - "good: largely satisfies the criterion with minor gaps"
+    - "excellent: fully satisfies the criterion"
+  does_pass_instructions: "Does the RESPONSE adequately address the QUERY, overall?"
+  max_response_chars: 12000
+  max_problem_chars: 1500
+  include_problem_statement: true
+  include_citations: false           # true: state carries response_sentences + cited_documents
+  max_citation_chars: 4000
+  qrels_doc_id: "report_hash"
+  on_missing: "fix_aggregate"
+  concurrency: 32
+  model: ""
+  debug: false
+  questions: {}                       # optional: {id: {type, instructions, criteria}} -- overrides
+                                       # criteria/does_pass entirely when non-empty. See the
+                                       # rag26/ragtime26 variants below and judges/jev/README.md.
+  checkeval_file: ""                  # optional: path to a CheckEval seed-question JSON; takes
+                                       # priority over `questions`.
+  qrels_dir: ""                       # optional: directory of TREC-format qrels pool files (see
+                                       # judges/_ground_truth.py). When set (and debug: true),
+                                       # debug records get objective ground_truth_citation_
+                                       # precision/recall. Empty/absent when unset or a topic has
+                                       # no qrels coverage (e.g. rag26, which has none).
+
+variants:
+  decompose:
+    criteria: ["topical relevance", "answer completeness", "factual grounding in the cited sources"]
+    include_citations: true
+
+  debug:
+    debug: true
+
+  # Per-dataset CheckEval question sets (see judges/_checkeval.py and
+  # judges/jev/README.md#per-dataset-question-sets).
+  rag26:
+    include_citations: true
+    checkeval_file: "jev style/checkeval_trec_rag_2026.json"
+
+  ragtime26:
+    include_citations: true
+    checkeval_file: "jev style/checkeval_trec_ragtime_2026.json"
+
+  # Same debug dump, plus objective ground_truth_citation_precision/recall from
+  # rag25's real qrels (see judges/jev/workflow.yml's rag25-truth variant).
+  rag25-truth:
+    debug: true
+    qrels_dir: "local-data/rag25/runs/qrels"

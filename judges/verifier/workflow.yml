@@ -1,0 +1,123 @@
+# VerifierJudge workflow -- "LLM-as-a-Verifier" (arXiv:2607.05391)
+#
+# Reads the endpoint's token logprobs and reports the EXPECTED grade over the
+# grade tokens, instead of taking a discrete LLM-as-judge label at face value.
+#
+#   auto-judge run --workflow judges/verifier/workflow.yml \
+#       --rag-responses data/kiddie/runs/repgen/ \
+#       --rag-topics data/kiddie/topics/kiddie-topics.jsonl \
+#       --out-dir ./output-verifier/
+
+qrels_class: "judges.verifier.verifier_judge:VerifierQrelsCreator"
+judge_class: "judges.verifier.verifier_judge:VerifierLeaderboardJudge"
+
+# Lifecycle
+create_nuggets: false
+create_qrels: true
+judge: true
+
+# The verifier judge computes its own scores; it does not consume the qrels.
+# (Both phases issue the same LLM requests, so with CACHE_DIR set the judge
+#  phase is served entirely from cache.)
+judge_uses_qrels: false
+judge_uses_nuggets: false
+qrels_uses_nuggets: false
+
+augment_report: false
+uses_llm: true
+
+settings:
+  filebase: "{_name}"
+  max_grade: 3                       # grade scale 0..3
+  top_logprobs: 20                   # request 20 token logprobs; set 0 for sampling mode
+  criteria: ["overall relevance"]    # decompose the judgment into these sub-criteria
+  repeats: 1                         # independent calls per (report, criterion)
+  repeat_temperature: 0.7            # temperature when repeats > 1 or sampling mode
+  base_seed: 12345
+  max_response_chars: 12000
+  max_problem_chars: 1500
+  include_problem_statement: true
+  include_citations: false           # append cited source snippets to the prompt
+  qrels_doc_id: "report_hash"        # "report_hash" | "run_id"
+  on_missing: "fix_aggregate"
+  max_gen_tokens: 512                # response budget (reasoning models need room)
+  reasoning_effort: ""              # "" | "low" | "medium" | "high" (gpt-oss / o-series)
+  guided_choice: false              # true: vLLM constrains the answer to one digit
+  debug: false                      # true: dump per-call query/citations/response, raw
+                                     # model output, grade-token logprobs and the E[g]
+                                     # calculation to <outdir>/<file>.verifier-debug.jsonl
+                                     # (see judges/verifier/debug_view.py). RESTRICTED data.
+  qrels_dir: ""                     # optional: directory of TREC-format qrels pool files,
+                                     # merged into one lookup. When set (and debug: true),
+                                     # debug records get objective ground_truth_citation_
+                                     # precision/recall from real judgments -- e.g. for rag25:
+                                     # local-data/rag25/runs/qrels. Empty/absent when unset
+                                     # or a topic has no qrels coverage (e.g. rag26, which
+                                     # ships none).
+
+# auto-judge run --workflow ... --variant <name>
+variants:
+  # gpt-oss-120b / any harmony or reasoning model: let it think, keep effort low.
+  # USE THIS for a gpt-oss endpoint served without a --reasoning-parser (content
+  # comes back null and the answer is in the raw <|channel|>final token stream).
+  gpt-oss:
+    reasoning_effort: "low"
+    max_gen_tokens: 900
+
+  # Only for a NON-reasoning instruct model on vLLM/outlines (Qwen2.5-Instruct,
+  # Llama-3.x-Instruct): constrains the answer to one grade token, ~free.
+  # Does NOT work on a raw-harmony gpt-oss endpoint (4-token budget never reaches
+  # the final channel -> every report scores 0).
+  guided:
+    guided_choice: true
+  # Axis 3: criteria decomposition
+  decompose:
+    criteria: ["topical relevance", "answer completeness", "factual grounding in the cited sources"]
+    include_citations: true
+
+  # Axis 2: repeated evaluation to cut variance
+  repeated:
+    repeats: 5
+
+  # No-logprobs endpoint: pure sampling verifier (axes 2 only)
+  sampling:
+    top_logprobs: 0
+    repeats: 8
+    repeat_temperature: 0.7
+
+  # gpt-oss-120b, but sampling instead of reading the final-token distribution:
+  # a reasoning model resolves its uncertainty during the hidden CoT, so the
+  # emitted answer digit's softmax collapses to near-argmax regardless of
+  # temperature (confirmed empirically -- see judges/verifier/README.md), which
+  # makes single-pass E[g] barely distinguishable from argmax. Resampling the
+  # *whole trajectory* K times and averaging the parsed digit captures real
+  # outcome-level variance instead.
+  gpt-oss-sampling:
+    reasoning_effort: "low"
+    max_gen_tokens: 900
+    top_logprobs: 0
+    repeats: 8
+    repeat_temperature: 0.7
+
+  # Everything on
+  full:
+    criteria: ["topical relevance", "answer completeness", "factual grounding in the cited sources"]
+    include_citations: true
+    repeats: 3
+
+  # Dump per-call inputs/outputs/logprobs/E[g] calculation to a .verifier-debug.jsonl
+  # next to the normal output. View with `python judges/verifier/debug_view.py <file>`.
+  debug:
+    debug: true
+
+  # Same debug dump, plus objective ground_truth_citation_precision/recall from
+  # rag25's real qrels (rag25 is pilot/training data with genuine assessed
+  # relevance judgments, unlike rag26/ragtime26's placeholder-only eval data).
+  rag25-truth:
+    debug: true
+    qrels_dir: "local-data/rag25/runs/qrels"
+
+# auto-judge run --workflow ... --sweep <name>
+sweeps:
+  grade-scale:
+    max_grade: [2, 3, 4]

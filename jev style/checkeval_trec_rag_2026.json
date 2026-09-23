@@ -1,0 +1,187 @@
+{
+  "task": "TREC 2026 RAG",
+  "task_url": "https://trec-rag.github.io/",
+  "description": "Given a narrative, retrieve relevant evidence from the ClimbMix-400b corpus and return a summarized, sentence-level answer (<=1024 words) with 0-3 citations per answer object.",
+  "official_evaluation": [
+    "AutoNuggetizer nugget rubric scoring (per-response, independent)",
+    "Weighted citation precision",
+    "Weighted citation recall",
+    "Pairwise system-vs-system battles (which response is better)"
+  ],
+  "checkeval_style": {
+    "question_format": "boolean",
+    "answer_alignment": "A 'yes' response always indicates higher quality.",
+    "dimension_score": "proportion of 'yes' responses among the dimension's questions",
+    "note": "These are SEED questions intended as input to the CheckEval augmentation (diversification + elaboration) and filtering stages."
+  },
+  "grounding_legend": {
+    "core": "Directly grounded in the track's stated evaluation.",
+    "extension": "Reasonable sub-dimension in the spirit of the task, not explicitly named in the guidelines; keep under human review."
+  },
+  "dimensions": [
+    {
+      "dimension": "Nugget Coverage / Relevance",
+      "grounding": "core",
+      "grounding_note": "AutoNuggetizer nugget rubric",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Facet breadth",
+          "questions": [
+            { "id": "rag-cov-facet-1", "text": "Does the answer address every distinct sub-question raised in the narrative?" },
+            { "id": "rag-cov-facet-2", "text": "Are the narrative's explicitly named considerations each covered?" }
+          ]
+        },
+        {
+          "sub_dimension": "Vital information",
+          "questions": [
+            { "id": "rag-cov-vital-1", "text": "Does the answer include the information a knowledgeable reader would consider essential to the narrative?" },
+            { "id": "rag-cov-vital-2", "text": "Does the answer prioritize central points over peripheral details?" }
+          ]
+        },
+        {
+          "sub_dimension": "Directness",
+          "questions": [
+            { "id": "rag-cov-direct-1", "text": "Does the answer directly respond to what was asked rather than adjacent topics?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Citation Precision",
+      "grounding": "core",
+      "grounding_note": "Weighted citation precision",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Attribution correctness",
+          "questions": [
+            { "id": "rag-prec-attr-1", "text": "For each cited sentence, do the cited documents actually contain the claim being made?" },
+            { "id": "rag-prec-attr-2", "text": "Does each citation point to the specific document that supports that sentence rather than a loosely related one?" }
+          ]
+        },
+        {
+          "sub_dimension": "Support strength",
+          "questions": [
+            { "id": "rag-prec-supp-1", "text": "Do the cited passages fully support the sentence rather than only partially?" },
+            { "id": "rag-prec-supp-2", "text": "Is the sentence free of claims that go beyond what the cited passage states?" }
+          ]
+        },
+        {
+          "sub_dimension": "Citation ordering",
+          "questions": [
+            { "id": "rag-prec-order-1", "text": "When a sentence has multiple citations, are they ordered strongest-to-weakest support?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Citation Recall / Groundedness",
+      "grounding": "core",
+      "grounding_note": "Weighted citation recall",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Claim grounding",
+          "questions": [
+            { "id": "rag-rec-ground-1", "text": "Is every factual claim in the answer backed by at least one citation?" },
+            { "id": "rag-rec-ground-2", "text": "Are there no answer sentences that make a checkable claim while leaving citations empty?" }
+          ]
+        },
+        {
+          "sub_dimension": "Coverage",
+          "questions": [
+            { "id": "rag-rec-cover-1", "text": "Is each supported sentence traceable to evidence in the references list?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Faithfulness to Evidence",
+      "grounding": "core",
+      "grounding_note": "Support-evaluation methodology (Thakur et al.)",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Factual consistency",
+          "questions": [
+            { "id": "rag-faith-fact-1", "text": "Is every claim consistent with the content of the retrieved documents?" },
+            { "id": "rag-faith-fact-2", "text": "Does the answer avoid contradicting its own cited sources?" }
+          ]
+        },
+        {
+          "sub_dimension": "No fabrication",
+          "questions": [
+            { "id": "rag-faith-fab-1", "text": "Does the answer avoid introducing facts, figures, or entities absent from the evidence?" },
+            { "id": "rag-faith-fab-2", "text": "Does the answer avoid relying on model prior knowledge for unsupported claims?" }
+          ]
+        },
+        {
+          "sub_dimension": "No distortion",
+          "questions": [
+            { "id": "rag-faith-dist-1", "text": "Does the answer represent source nuance without overgeneralizing or exaggerating?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Answer Relevance & Focus",
+      "grounding": "core",
+      "grounding_note": "Pairwise preference / relevance to narrative",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Relevance & scope",
+          "questions": [
+            { "id": "rag-rel-1", "text": "Does all content in the answer serve the narrative's information need?" },
+            { "id": "rag-rel-2", "text": "Is the answer free of off-topic or filler passages?" },
+            { "id": "rag-rel-3", "text": "Is the scope appropriate, neither too narrow to be useful nor padded with tangents?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Coherence & Organization",
+      "grounding": "extension",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Logical flow",
+          "questions": [
+            { "id": "rag-coh-flow-1", "text": "Do the sentences follow a logical progression rather than a disconnected list?" },
+            { "id": "rag-coh-flow-2", "text": "Are related points grouped together?" }
+          ]
+        },
+        {
+          "sub_dimension": "Non-redundancy",
+          "questions": [
+            { "id": "rag-coh-redun-1", "text": "Does the answer avoid repeating the same point across multiple sentences?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Fluency",
+      "grounding": "extension",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Grammar & readability",
+          "questions": [
+            { "id": "rag-flu-1", "text": "Is the answer free of major grammatical errors?" },
+            { "id": "rag-flu-2", "text": "Are sentences clear and easy to read on first pass?" }
+          ]
+        }
+      ]
+    },
+    {
+      "dimension": "Format & Constraint Compliance",
+      "grounding": "core",
+      "grounding_note": "Validation rules",
+      "sub_dimensions": [
+        {
+          "sub_dimension": "Structural validity",
+          "questions": [
+            { "id": "rag-fmt-1", "text": "Is each answer object a single, non-empty text unit at sentence-level granularity?" },
+            { "id": "rag-fmt-2", "text": "Does each answer object carry between 0 and 3 citations?" },
+            { "id": "rag-fmt-3", "text": "Is the total answer at or below 1024 words using str.split() counting?" },
+            { "id": "rag-fmt-4", "text": "Is every citation a valid zero-based index into references or an exact ClimbMix docid?" }
+          ]
+        }
+      ]
+    }
+  ]
+}

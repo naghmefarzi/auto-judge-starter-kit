@@ -6,6 +6,7 @@ test-coverage
 .venv/
 cache/
 *cache/
+*cache*/
 example-cache-kiddie/
 out*/
 output/
@@ -14,3 +15,11 @@ results/
 
 # Fetched evaluation data (fetch_datasets.py); never committed
 /local-data/
+
+# Credentials; never committed
+api-key*.txt
+*.key
+.env
+.env.*
+.commands
+
