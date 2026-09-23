@@ -43,6 +43,11 @@ def main(truth_format, eval_format, truth_leaderboard, input_directory, output_d
     leaderboard_to_eval = find_leaderboard(input_directory)
     if leaderboard_to_eval is None:
         print(f"No leaderboard found in {input_directory}")
+
+        if extract_llm(input_directory):
+            with open(f"{output_directory}/evaluation.prototext", "w") as f:
+                f.write(to_prototext([{"Model": extract_llm(input_directory)}]))
+
         return
 
     cmd = f"auto-judge-evaluate meta-evaluate --truth-leaderboard {truth_leaderboard} --truth-format {truth_format} --eval-format {eval_format} -i {leaderboard_to_eval} --on-missing warn --output {output_directory}/correlations.jsonl"
